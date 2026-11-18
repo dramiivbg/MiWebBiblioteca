@@ -1,0 +1,390 @@
+<div class="app-frame">
+  @if (!user()) {
+    <main class="auth-page">
+      <a class="brand auth-brand" href="/" aria-label="Biblioteca, inicio">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span>Biblioteca</span>
+      </a>
+
+      <div class="auth-layout">
+        <section class="welcome-panel" aria-labelledby="welcome-title">
+          <div class="welcome-orbit orbit-one"></div>
+          <div class="welcome-orbit orbit-two"></div>
+          <div class="welcome-copy">
+            <p class="eyebrow light-eyebrow">UN LUGAR PARA CADA HISTORIA</p>
+            <h1 id="welcome-title">Tu próxima lectura te está esperando.</h1>
+            <p>
+              Explora el catálogo, reserva tus libros favoritos y mantén todas tus lecturas
+              organizadas en un solo lugar.
+            </p>
+            <div class="book-stack" aria-hidden="true">
+              <span class="stack-book book-one"><i></i></span>
+              <span class="stack-book book-two"><i></i></span>
+              <span class="stack-book book-three"><i></i></span>
+              <span class="stack-book book-four"><i></i></span>
+            </div>
+            <div class="welcome-note">
+              <span class="note-icon" aria-hidden="true">✦</span>
+              <span>Un buen libro siempre te encuentra.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="auth-card" aria-live="polite">
+          @if (mode() === 'role') {
+            <p class="eyebrow">BIENVENIDO/A</p>
+            <h2>¿Cómo quieres entrar?</h2>
+            <p class="muted">Selecciona tu perfil para continuar.</p>
+            @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+            <div class="role-options">
+              <button class="role-card" type="button" (click)="chooseRole('user')">
+                <span class="role-icon user-icon" aria-hidden="true">↗</span>
+                <span class="role-title">Soy usuario</span>
+                <span class="role-description">Quiero descubrir y reservar libros.</span>
+                <span class="role-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="role-card" type="button" (click)="chooseRole('admin')">
+                <span class="role-icon admin-icon" aria-hidden="true">⌘</span>
+                <span class="role-title">Soy administrador</span>
+                <span class="role-description">Quiero gestionar la biblioteca.</span>
+                <span class="role-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+            <p class="security-note">
+              <span aria-hidden="true">▣</span> El acceso se valida con tu cuenta y permisos.
+            </p>
+          } @else if (mode() === 'login') {
+            <button class="text-button back-button" type="button" (click)="backToRoles()">
+              <span aria-hidden="true">←</span> Cambiar perfil
+            </button>
+            <p class="eyebrow">ACCESO {{ selectedRole() === 'admin' ? 'ADMINISTRADOR' : 'USUARIO' }}</p>
+            <h2>Qué bueno tenerte de vuelta.</h2>
+            <p class="muted">Ingresa tus datos para continuar.</p>
+
+            @if (message()) {
+              <div class="feedback success" role="status">{{ message() }}</div>
+            }
+            @if (error()) {
+              <div class="feedback danger" role="alert">{{ error() }}</div>
+            }
+
+            <form [formGroup]="loginForm" (ngSubmit)="signIn()" class="form-stack">
+              <label for="login-email">Correo electrónico</label>
+              <input id="login-email" type="email" autocomplete="email" formControlName="email"
+                placeholder="nombre@correo.com">
+              @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+                <small class="field-error">Escribe un correo electrónico válido.</small>
+              }
+              <label for="login-password">Contraseña</label>
+              <input id="login-password" type="password" autocomplete="current-password"
+                formControlName="password" placeholder="Tu contraseña">
+              @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+                <small class="field-error">Escribe tu contraseña.</small>
+              }
+              <button class="primary-button full-button" type="submit" [disabled]="busy()">
+                {{ busy() ? 'Conectando…' : 'Iniciar sesión' }}
+                @if (!busy()) { <span aria-hidden="true">→</span> }
+              </button>
+            </form>
+
+            @if (selectedRole() === 'user') {
+              <p class="form-footer">
+                ¿Todavía no tienes cuenta?
+                <button class="text-button" type="button" (click)="openRegistration()">Regístrate</button>
+              </p>
+            }
+          } @else if (mode() === 'register') {
+            <button class="text-button back-button" type="button" (click)="chooseRole('user')">
+              <span aria-hidden="true">←</span> Volver al acceso
+            </button>
+            <p class="eyebrow">NUEVA CUENTA</p>
+            <h2>Únete a la biblioteca.</h2>
+            <p class="muted">Te enviaremos un enlace para verificar tu correo.</p>
+            @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+            <form [formGroup]="registerForm" (ngSubmit)="register()" class="form-stack registration-form">
+              <label for="register-name">Nombre completo</label>
+              <input id="register-name" autocomplete="name" formControlName="fullName" placeholder="Tu nombre">
+              @if (registerForm.controls.fullName.touched && registerForm.controls.fullName.invalid) {
+                <small class="field-error">Este campo es obligatorio.</small>
+              }
+              <label for="register-username">Nombre de usuario</label>
+              <input id="register-username" autocomplete="username" formControlName="userName" placeholder="Cómo te llamamos">
+              @if (registerForm.controls.userName.touched && registerForm.controls.userName.invalid) {
+                <small class="field-error">Este campo es obligatorio.</small>
+              }
+              <label for="register-email">Correo electrónico</label>
+              <input id="register-email" type="email" autocomplete="email" formControlName="email" placeholder="nombre@correo.com">
+              @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
+                <small class="field-error">Escribe un correo electrónico válido.</small>
+              }
+              <label for="register-phone">Teléfono</label>
+              <input id="register-phone" type="tel" autocomplete="tel" formControlName="phoneNumber" placeholder="+34 600 000 000">
+              <label for="register-address">Dirección</label>
+              <input id="register-address" autocomplete="street-address" formControlName="address" placeholder="Tu dirección">
+              <label for="register-password">Contraseña</label>
+              <input id="register-password" type="password" autocomplete="new-password" formControlName="password" placeholder="Mínimo 8 caracteres">
+              @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
+                <small class="field-error">Usa al menos 8 caracteres.</small>
+              }
+              <label for="register-confirm">Confirma tu contraseña</label>
+              <input id="register-confirm" type="password" autocomplete="new-password" formControlName="confirmPassword" placeholder="Repite la contraseña">
+              <button class="primary-button full-button" type="submit" [disabled]="busy()">
+                {{ busy() ? 'Creando cuenta…' : 'Crear cuenta' }}
+                @if (!busy()) { <span aria-hidden="true">→</span> }
+              </button>
+            </form>
+          } @else {
+            <p class="eyebrow">VERIFICA TU CORREO</p>
+            <h2>Un paso más y listo.</h2>
+            @if (message()) {
+              <div class="feedback success" role="status">{{ message() }}</div>
+            } @else {
+              <p class="muted">
+                Confirma tu dirección de correo desde el enlace que te enviamos. Después podrás iniciar sesión.
+              </p>
+            }
+            @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+            <button class="primary-button full-button" type="button" (click)="chooseRole('user')">
+              Ir al inicio de sesión <span aria-hidden="true">→</span>
+            </button>
+          }
+        </section>
+      </div>
+      <footer class="auth-footer"><span>© 2026 Biblioteca</span><span>Lecturas que nos conectan</span></footer>
+    </main>
+  } @else {
+    <div class="dashboard">
+      <aside class="sidebar">
+        <a class="brand sidebar-brand" href="/" aria-label="Biblioteca, inicio">
+          <span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca</span>
+        </a>
+        <div class="sidebar-label">MENÚ</div>
+        <nav class="side-nav" aria-label="Navegación principal">
+          @if (user()?.role === 'user') {
+            <button type="button" [class.active]="section() === 'catalog'" (click)="setSection('catalog')">
+              <span aria-hidden="true">▤</span> Explorar libros
+            </button>
+            <button type="button" [class.active]="section() === 'reservations'" (click)="setSection('reservations')">
+              <span aria-hidden="true">◷</span> Mis reservas
+            </button>
+          } @else {
+            <button type="button" [class.active]="section() === 'reservations'" (click)="setSection('reservations')">
+              <span aria-hidden="true">◷</span> Reservas
+            </button>
+            <button type="button" [class.active]="section() === 'books'" (click)="setSection('books')">
+              <span aria-hidden="true">▤</span> Catálogo
+            </button>
+            <button type="button" [class.active]="section() === 'users'" (click)="setSection('users')">
+              <span aria-hidden="true">♙</span> Usuarios
+            </button>
+          }
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="sidebar-help">
+            <span class="help-icon" aria-hidden="true">✦</span>
+            <strong>¿Un libro te cambió?</strong>
+            <span>Compártelo con la comunidad.</span>
+          </div>
+          <button class="logout-button" type="button" (click)="signOut()" [disabled]="busy()">
+            <span aria-hidden="true">↪</span> Cerrar sesión
+          </button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Biblioteca</span><span aria-hidden="true">/</span><strong>
+            @switch (section()) {
+              @case ('catalog') { Catálogo }
+              @case ('reservations') { Reservas }
+              @case ('books') { Gestión de libros }
+              @case ('users') { Usuarios }
+            }
+          </strong></div>
+          <div class="profile">
+            <span class="profile-role">{{ user()?.role === 'admin' ? 'ADMINISTRADOR' : 'USUARIO' }}</span>
+            <span class="avatar" aria-hidden="true">{{ user()?.name?.slice(0, 1)?.toUpperCase() }}</span>
+            <span class="profile-name">{{ user()?.name }}</span>
+          </div>
+        </header>
+
+        <div class="page-content">
+          @if (message()) { <div class="feedback success page-feedback" role="status">{{ message() }}</div> }
+          @if (error()) { <div class="feedback danger page-feedback" role="alert">{{ error() }}</div> }
+
+          <section class="dashboard-intro">
+            <div>
+              <p class="eyebrow">{{ user()?.role === 'admin' ? 'PANEL DE ADMINISTRACIÓN' : 'TU ESPACIO DE LECTURA' }}</p>
+              <h1>
+                @if (section() === 'catalog') { Encuentra tu próxima historia. }
+                @else if (section() === 'reservations' && user()?.role === 'user') { Tus lecturas, a mano. }
+                @else if (section() === 'reservations') { Gestión de reservas }
+                @else if (section() === 'books') { Cuida de tu catálogo. }
+                @else { Una comunidad lectora. }
+              </h1>
+              <p class="muted">
+                @if (section() === 'catalog') { Historias nuevas, autores inolvidables y un lugar para cada lector. }
+                @else if (section() === 'reservations' && user()?.role === 'user') { Revisa el estado y la fecha de devolución de tus libros. }
+                @else if (section() === 'reservations') { Consulta préstamos y confirma las devoluciones recibidas. }
+                @else if (section() === 'books') { Administra los títulos y ejemplares disponibles. }
+                @else { Administra las cuentas registradas en la biblioteca. }
+              </p>
+            </div>
+            @if (user()?.role === 'user' && section() === 'catalog') {
+              <div class="mini-stat"><span class="mini-stat-icon" aria-hidden="true">▤</span><span><strong>{{ books().length }}</strong><small>títulos disponibles</small></span></div>
+            }
+          </section>
+
+          <section class="stats-grid" aria-label="Resumen de la biblioteca">
+            <article class="stat-card">
+              <span class="stat-icon lavender" aria-hidden="true">▤</span>
+              <span class="stat-copy"><small>{{ user()?.role === 'admin' ? 'TÍTULOS EN CATÁLOGO' : 'LIBROS PARA EXPLORAR' }}</small><strong>{{ books().length }}</strong></span>
+              <span class="stat-caption">en la biblioteca</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon peach" aria-hidden="true">◷</span>
+              <span class="stat-copy"><small>{{ user()?.role === 'admin' ? 'PRÉSTAMOS ACTIVOS' : 'TUS PRÉSTAMOS ACTIVOS' }}</small><strong>{{ activeReservations() }}</strong></span>
+              <span class="stat-caption">pendientes de devolución</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon mint" aria-hidden="true">▥</span>
+              <span class="stat-copy"><small>EJEMPLARES DISPONIBLES</small><strong>{{ totalCopies() }}</strong></span>
+              <span class="stat-caption">listos para reservar</span>
+            </article>
+          </section>
+
+          @if (loading()) {
+            <div class="loading-state" role="status"><span class="spinner"></span> Cargando biblioteca…</div>
+          } @else if (section() === 'catalog') {
+            <section class="content-panel">
+              <div class="section-heading">
+                <div><h2>El catálogo</h2><p class="muted">Una historia nueva está a solo una reserva.</p></div>
+                <label class="search-box">
+                  <span aria-hidden="true">⌕</span>
+                  <input type="search" aria-label="Buscar por título o autor" placeholder="Buscar libros o autores…" [value]="search()" (input)="setSearch($event)">
+                </label>
+              </div>
+              @if (visibleBooks().length) {
+                <div class="book-grid">
+                  @for (book of visibleBooks(); track book.id; let i = $index) {
+                    <article class="book-card">
+                      <div class="book-cover" [class.cover-lilac]="i % 4 === 0" [class.cover-sage]="i % 4 === 1" [class.cover-rose]="i % 4 === 2" [class.cover-gold]="i % 4 === 3">
+                        <span class="cover-kicker">BIBLIOTECA · {{ book.publishedDate | date:'yyyy' }}</span>
+                        <span class="cover-title">{{ book.title }}</span>
+                        <span class="cover-author">{{ book.author }}</span>
+                        <span class="cover-ornament" aria-hidden="true">✳</span>
+                      </div>
+                      <div class="book-info">
+                        <div class="book-meta"><span>{{ book.pages }} páginas</span><span [class.stock-empty]="book.stock < 1">{{ book.stock > 0 ? 'Disponible' : 'Agotado' }}</span></div>
+                        <h3>{{ book.title }}</h3>
+                        <p>{{ book.author }}</p>
+                        <p class="book-description">{{ book.description }}</p>
+                        <button class="outline-button" type="button" [disabled]="book.stock < 1 || busy()" (click)="reserve(book)">
+                          {{ book.stock > 0 ? 'Reservar libro' : 'Sin ejemplares' }} <span aria-hidden="true">→</span>
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-state"><span aria-hidden="true">⌕</span><h3>No encontramos ese libro.</h3><p>Prueba con otro título o autor.</p></div>
+              }
+            </section>
+          } @else if (section() === 'reservations') {
+            <section class="content-panel">
+              <div class="section-heading"><div><h2>{{ user()?.role === 'admin' ? 'Todos los préstamos' : 'Mis reservas' }}</h2><p class="muted">El estado de cada libro, de un vistazo.</p></div></div>
+              @if (reservations().length) {
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr>
+                      @if (user()?.role === 'admin') { <th>LECTOR</th> }
+                      <th>LIBRO</th><th>RESERVADO EL</th><th>DEVOLUCIÓN</th><th>ESTADO</th>
+                      @if (user()?.role === 'admin') { <th>ACCIÓN</th> }
+                    </tr></thead>
+                    <tbody>
+                      @for (reservation of reservations(); track reservation.id) {
+                        <tr>
+                          @if (user()?.role === 'admin') {
+                            <td><strong>{{ userFor(reservation)?.fullName || 'Usuario' }}</strong><small class="table-subtext">{{ userFor(reservation)?.email || reservation.userId }}</small></td>
+                          }
+                          <td><strong>{{ bookFor(reservation)?.title || 'Libro #' + reservation.bookId }}</strong><small class="table-subtext">{{ bookFor(reservation)?.author || 'Catálogo' }}</small></td>
+                          <td>{{ reservation.reservationDate | date:'d MMM y' }}</td>
+                          <td>{{ reservation.dueDate | date:'d MMM y' }}</td>
+                          <td><span class="status-pill" [class.returned]="reservation.isReturned">{{ reservation.isReturned ? 'Devuelto' : 'En préstamo' }}</span></td>
+                          @if (user()?.role === 'admin') {
+                            <td>
+                              @if (!reservation.isReturned) {
+                                <button class="table-action" type="button" [disabled]="busy()" (click)="returnBook(reservation)">Confirmar devolución</button>
+                              } @else { <span class="completed-label">Completado</span> }
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <div class="empty-state"><span aria-hidden="true">◷</span><h3>Aún no hay reservas.</h3><p>{{ user()?.role === 'admin' ? 'Las reservas aparecerán aquí.' : 'Cuando reserves un libro, podrás seguirlo desde aquí.' }}</p>
+                  @if (user()?.role === 'user') { <button class="text-button" type="button" (click)="setSection('catalog')">Explorar el catálogo →</button> }
+                </div>
+              }
+            </section>
+          } @else if (section() === 'books') {
+            <section class="content-panel">
+              <div class="section-heading"><div><h2>Todos los libros</h2><p class="muted">Gestiona los títulos de tu catálogo.</p></div><button class="primary-button" type="button" (click)="openNewBook()">＋ Añadir libro</button></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>TÍTULO</th><th>AUTOR</th><th>EJEMPLARES</th><th>PÁGINAS</th><th>ACCIONES</th></tr></thead>
+                  <tbody>
+                    @for (book of books(); track book.id) {
+                      <tr><td><strong>{{ book.title }}</strong><small class="table-subtext">{{ book.publishedDate | date:'yyyy' }}</small></td><td>{{ book.author }}</td><td>{{ book.stock }}</td><td>{{ book.pages }}</td><td class="action-cell"><button class="table-action" type="button" (click)="editBook(book)">Editar</button><button class="table-action danger-action" type="button" (click)="deleteBook(book)">Eliminar</button></td></tr>
+                    } @empty {
+                      <tr><td colspan="5" class="table-empty">Aún no hay libros en el catálogo.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          } @else {
+            <section class="content-panel">
+              <div class="section-heading"><div><h2>Usuarios</h2><p class="muted">Administra el acceso a la biblioteca.</p></div></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>PERSONA</th><th>CONTACTO</th><th>VERIFICACIÓN</th><th>ESTADO</th><th>ACCIÓN</th></tr></thead>
+                  <tbody>
+                    @for (libraryUser of users(); track libraryUser.id || libraryUser.email) {
+                      <tr><td><strong>{{ libraryUser.fullName }}</strong><small class="table-subtext">{{ libraryUser.userName }}</small></td><td>{{ libraryUser.email }}<small class="table-subtext">{{ libraryUser.phoneNumber }}</small></td><td><span class="status-pill" [class.returned]="libraryUser.emailConfirmed">{{ libraryUser.emailConfirmed ? 'Verificado' : 'Pendiente' }}</span></td><td><span class="status-pill" [class.returned]="!isUserDisabled(libraryUser)">{{ isUserDisabled(libraryUser) ? 'Deshabilitado' : 'Activo' }}</span></td><td>@if (libraryUser.id) { <button class="table-action" type="button" [disabled]="busy()" (click)="toggleUser(libraryUser)">{{ isUserDisabled(libraryUser) ? 'Habilitar' : 'Deshabilitar' }}</button> }</td></tr>
+                    } @empty {
+                      <tr><td colspan="5" class="table-empty">No hay usuarios registrados.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          }
+        </div>
+      </main>
+    </div>
+  }
+
+  @if (showBookForm()) {
+    <div class="modal-backdrop" (click)="showBookForm.set(false)" (keydown.escape)="showBookForm.set(false)">
+      <section class="book-modal" role="dialog" aria-modal="true" aria-labelledby="book-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="showBookForm.set(false)">×</button>
+        <p class="eyebrow">CATÁLOGO</p>
+        <h2 id="book-modal-title">{{ editingBook() ? 'Editar libro' : 'Añadir un libro' }}</h2>
+        <form [formGroup]="bookForm" (ngSubmit)="saveBook()" class="form-stack modal-form">
+          <label for="book-title">Título</label><input id="book-title" formControlName="title">
+          <label for="book-author">Autor</label><input id="book-author" formControlName="author">
+          <label for="book-description">Descripción</label><textarea id="book-description" rows="3" formControlName="description"></textarea>
+          <div class="form-row">
+            <span><label for="book-date">Fecha de publicación</label><input id="book-date" type="date" formControlName="publishedDate"></span>
+            <span><label for="book-stock">Ejemplares</label><input id="book-stock" type="number" min="0" formControlName="stock"></span>
+            <span><label for="book-pages">Páginas</label><input id="book-pages" type="number" min="1" formControlName="pages"></span>
+          </div>
+          <button class="primary-button full-button" type="submit" [disabled]="busy()">{{ editingBook() ? 'Guardar cambios' : 'Añadir al catálogo' }}</button>
+        </form>
+      </section>
+    </div>
+  }
+</div>
