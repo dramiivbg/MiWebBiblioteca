@@ -329,34 +329,34 @@ export class BibliotecaApiService {
   }
 
   createBook(book: Omit<Book, 'id'>): Observable<Book> {
-    return this.http.post<Book>(`${API_URL}/Book`, { id: 0, ...book });
+    return this.http.post<Book>(`${API_URL}/book`, { id: 0, ...book });
   }
 
   updateBook(book: Book): Observable<Book> {
-    return this.http.put<Book>(`${API_URL}/Book/${book.id}`, book);
+    return this.http.put<Book>(`${API_URL}/book/${book.id}`, book);
   }
 
   deleteBook(bookId: number): Observable<void> {
-    return this.http.delete<void>(`${API_URL}/Book/${bookId}`);
+    return this.http.delete<void>(`${API_URL}/book/${bookId}`);
   }
 
   reservations(userId?: string): Observable<Reservation[]> {
     let params = new HttpParams();
     if (userId) params = params.set('userId', userId);
-    return this.http.get<Reservation[]>(`${API_URL}/Reservation`, { params });
+    return this.http.get<Reservation[]>(`${API_URL}/reservation`, { params });
   }
 
   createReservation(
     reservation: Omit<Reservation, 'id' | 'isReturned'>,
   ): Observable<Reservation> {
-    return this.http.post<Reservation>(`${API_URL}/Reservation`, {
+    return this.http.post<Reservation>(`${API_URL}/reservation`, {
       ...reservation,
       isReturned: false,
     });
   }
 
   markReturned(reservationId: number): Observable<Reservation> {
-    return this.http.put<Reservation>(`${API_URL}/Reservation/${reservationId}/return`, null);
+    return this.http.put<Reservation>(`${API_URL}/reservation/${reservationId}/return`, null);
   }
 
   users(): Observable<LibraryUser[]> {
@@ -366,7 +366,7 @@ export class BibliotecaApiService {
   setUserEnabled(userId: string, enabled: boolean): Observable<void> {
     const action = enabled ? 'enable' : 'disable';
     return this.http
-      .get<void>(`${API_URL}/User/${encodeURIComponent(userId)}/${action}`)
+      .get<void>(`${API_URL}/user/${encodeURIComponent(userId)}/${action}`)
       .pipe(map(() => undefined));
   }
 }

@@ -4,6 +4,7 @@ import { App } from './app';
 
 describe('App', () => {
   beforeEach(async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideHttpClient()],
@@ -17,10 +18,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the library app', async () => {
+  it('should render the sign-in flow when no user is signed in', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('app-biblioteca')).toBeTruthy();
+    expect(compiled.querySelector('app-biblioteca-auth')).toBeTruthy();
   });
 });

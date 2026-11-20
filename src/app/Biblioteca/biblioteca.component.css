@@ -1,4 +1,6 @@
-app-biblioteca {
+app-biblioteca,
+app-biblioteca-auth,
+app-biblioteca-admin {
   display: block;
   min-height: 100vh;
   color: #252422;

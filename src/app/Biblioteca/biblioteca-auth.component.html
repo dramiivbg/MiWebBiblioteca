@@ -1,0 +1,148 @@
+<main class="auth-page">
+  <a class="brand auth-brand" href="/" aria-label="Biblioteca, inicio">
+    <span class="brand-mark" aria-hidden="true">B</span>
+    <span>Biblioteca</span>
+  </a>
+
+  <div class="auth-layout">
+    <section class="welcome-panel" aria-labelledby="welcome-title">
+      <div class="welcome-orbit orbit-one"></div>
+      <div class="welcome-orbit orbit-two"></div>
+      <div class="welcome-copy">
+        <p class="eyebrow light-eyebrow">UN LUGAR PARA CADA HISTORIA</p>
+        <h1 id="welcome-title">Tu próxima lectura te está esperando.</h1>
+        <p>
+          Explora el catálogo, reserva tus libros favoritos y mantén todas tus lecturas
+          organizadas en un solo lugar.
+        </p>
+        <div class="book-stack" aria-hidden="true">
+          <span class="stack-book book-one"><i></i></span>
+          <span class="stack-book book-two"><i></i></span>
+          <span class="stack-book book-three"><i></i></span>
+          <span class="stack-book book-four"><i></i></span>
+        </div>
+        <div class="welcome-note">
+          <span class="note-icon" aria-hidden="true">✦</span>
+          <span>Un buen libro siempre te encuentra.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-card" aria-live="polite">
+      @if (mode() === 'role') {
+        <p class="eyebrow">BIENVENIDO/A</p>
+        <h2>¿Cómo quieres entrar?</h2>
+        <p class="muted">Selecciona tu perfil para continuar.</p>
+        @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+        <div class="role-options">
+          <button class="role-card" type="button" (click)="chooseRole('user')">
+            <span class="role-icon user-icon" aria-hidden="true">↗</span>
+            <span class="role-title">Soy usuario</span>
+            <span class="role-description">Quiero descubrir y reservar libros.</span>
+            <span class="role-arrow" aria-hidden="true">→</span>
+          </button>
+          <button class="role-card" type="button" (click)="chooseRole('admin')">
+            <span class="role-icon admin-icon" aria-hidden="true">⌘</span>
+            <span class="role-title">Soy administrador</span>
+            <span class="role-description">Quiero gestionar la biblioteca.</span>
+            <span class="role-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+        <p class="security-note">
+          <span aria-hidden="true">▣</span> El acceso se valida con tu cuenta y permisos.
+        </p>
+      } @else if (mode() === 'login') {
+        <button class="text-button back-button" type="button" (click)="backToRoles()">
+          <span aria-hidden="true">←</span> Cambiar perfil
+        </button>
+        <p class="eyebrow">ACCESO {{ selectedRole() === 'admin' ? 'ADMINISTRADOR' : 'USUARIO' }}</p>
+        <h2>Qué bueno tenerte de vuelta.</h2>
+        <p class="muted">Ingresa tus datos para continuar.</p>
+
+        @if (message()) { <div class="feedback success" role="status">{{ message() }}</div> }
+        @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+
+        <form [formGroup]="loginForm" (ngSubmit)="signIn()" class="form-stack">
+          <label for="login-email">Correo electrónico</label>
+          <input id="login-email" type="email" autocomplete="email" formControlName="email"
+            placeholder="nombre@correo.com">
+          @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+            <small class="field-error">Escribe un correo electrónico válido.</small>
+          }
+          <label for="login-password">Contraseña</label>
+          <input id="login-password" type="password" autocomplete="current-password"
+            formControlName="password" placeholder="Tu contraseña">
+          @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+            <small class="field-error">Escribe tu contraseña.</small>
+          }
+          <button class="primary-button full-button" type="submit" [disabled]="busy()">
+            {{ busy() ? 'Conectando…' : 'Iniciar sesión' }}
+            @if (!busy()) { <span aria-hidden="true">→</span> }
+          </button>
+        </form>
+
+        @if (selectedRole() === 'user') {
+          <p class="form-footer">
+            ¿Todavía no tienes cuenta?
+            <button class="text-button" type="button" (click)="openRegistration()">Regístrate</button>
+          </p>
+        }
+      } @else if (mode() === 'register') {
+        <button class="text-button back-button" type="button" (click)="chooseRole('user')">
+          <span aria-hidden="true">←</span> Volver al acceso
+        </button>
+        <p class="eyebrow">NUEVA CUENTA</p>
+        <h2>Únete a la biblioteca.</h2>
+        <p class="muted">Te enviaremos un enlace para verificar tu correo.</p>
+        @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+        <form [formGroup]="registerForm" (ngSubmit)="register()" class="form-stack registration-form">
+          <label for="register-name">Nombre completo</label>
+          <input id="register-name" autocomplete="name" formControlName="fullName" placeholder="Tu nombre">
+          @if (registerForm.controls.fullName.touched && registerForm.controls.fullName.invalid) {
+            <small class="field-error">Este campo es obligatorio.</small>
+          }
+          <label for="register-username">Nombre de usuario</label>
+          <input id="register-username" autocomplete="username" formControlName="userName" placeholder="Cómo te llamamos">
+          @if (registerForm.controls.userName.touched && registerForm.controls.userName.invalid) {
+            <small class="field-error">Este campo es obligatorio.</small>
+          }
+          <label for="register-email">Correo electrónico</label>
+          <input id="register-email" type="email" autocomplete="email" formControlName="email" placeholder="nombre@correo.com">
+          @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
+            <small class="field-error">Escribe un correo electrónico válido.</small>
+          }
+          <label for="register-phone">Teléfono</label>
+          <input id="register-phone" type="tel" autocomplete="tel" formControlName="phoneNumber" placeholder="+34 600 000 000">
+          <label for="register-address">Dirección</label>
+          <input id="register-address" autocomplete="street-address" formControlName="address" placeholder="Tu dirección">
+          <label for="register-password">Contraseña</label>
+          <input id="register-password" type="password" autocomplete="new-password" formControlName="password" placeholder="Mínimo 8 caracteres">
+          @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
+            <small class="field-error">Usa al menos 8 caracteres.</small>
+          }
+          <label for="register-confirm">Confirma tu contraseña</label>
+          <input id="register-confirm" type="password" autocomplete="new-password" formControlName="confirmPassword" placeholder="Repite la contraseña">
+          <button class="primary-button full-button" type="submit" [disabled]="busy()">
+            {{ busy() ? 'Creando cuenta…' : 'Crear cuenta' }}
+            @if (!busy()) { <span aria-hidden="true">→</span> }
+          </button>
+        </form>
+      } @else {
+        <p class="eyebrow">VERIFICA TU CORREO</p>
+        <h2>Un paso más y listo.</h2>
+        @if (message()) {
+          <div class="feedback success" role="status">{{ message() }}</div>
+        } @else {
+          <p class="muted">
+            Confirma tu dirección de correo desde el enlace que te enviamos. Después podrás iniciar sesión.
+          </p>
+        }
+        @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+        <button class="primary-button full-button" type="button" (click)="chooseRole('user')">
+          Ir al inicio de sesión <span aria-hidden="true">→</span>
+        </button>
+      }
+    </section>
+  </div>
+  <footer class="auth-footer"><span>© 2026 Biblioteca</span><span>Lecturas que nos conectan</span></footer>
+</main>

@@ -1,1 +1,12 @@
-<app-biblioteca />
+@if (user(); as currentUser) {
+  @if (currentUser.role === 'admin') {
+    <app-biblioteca-admin [user]="currentUser" [signingOut]="signingOut()" (signOut)="signOut()" />
+  } @else {
+    <app-biblioteca [user]="currentUser" [signingOut]="signingOut()" (signOut)="signOut()" />
+  }
+} @else {
+  @if (sessionError()) {
+    <div class="feedback danger" role="alert">{{ sessionError() }}</div>
+  }
+  <app-biblioteca-auth (authenticated)="onAuthenticated($event)" />
+}
