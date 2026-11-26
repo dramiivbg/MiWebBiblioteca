@@ -55,6 +55,21 @@ describe('BibliotecaAuthService', () => {
     expect(auth.session()).toEqual(refreshedTokens);
   });
 
+  it('sends the forgot-password email as a JSON string and includes credentials', async () => {
+    const response = firstValueFrom(auth.forgotPassword('reader@example.com'));
+    const request = http.expectOne('http://localhost:5000/api/auth/forgot-password');
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBe('"reader@example.com"');
+    expect(request.request.headers.get('Content-Type')).toBe('application/json');
+    expect(request.request.withCredentials).toBe(true);
+
+    request.flush({ message: 'Si el correo existe, recibirás un enlace.' });
+    await expect(response).resolves.toEqual({
+      message: 'Si el correo existe, recibirás un enlace.',
+    });
+  });
+
   it('sends the refresh cookie on logout and clears the local session', async () => {
     const login = auth.login('reader@example.com', 'password');
     http.expectOne('http://localhost:5000/api/auth/login').flush({

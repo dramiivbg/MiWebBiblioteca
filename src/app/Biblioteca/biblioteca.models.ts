@@ -37,7 +37,6 @@ export interface LibraryUser {
   userName: string;
   email: string;
   emailConfirmed: boolean;
-  password: string;
   phoneNumber: string;
   role: number;
   phoneNumberConfirmed: boolean;

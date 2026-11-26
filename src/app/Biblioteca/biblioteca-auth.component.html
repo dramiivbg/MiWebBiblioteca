@@ -1,5 +1,5 @@
 <main class="auth-page">
-  <a class="brand auth-brand" href="/" aria-label="Biblioteca, inicio">
+  <a class="brand auth-brand" routerLink="/" aria-label="Biblioteca, inicio">
     <span class="brand-mark" aria-hidden="true">B</span>
     <span>Biblioteca</span>
   </a>
@@ -28,7 +28,7 @@
       </div>
     </section>
 
-    <section class="auth-card" aria-live="polite">
+    <section class="auth-card">
       @if (mode() === 'role') {
         <p class="eyebrow">BIENVENIDO/A</p>
         <h2>¿Cómo quieres entrar?</h2>
@@ -59,21 +59,28 @@
         <h2>Qué bueno tenerte de vuelta.</h2>
         <p class="muted">Ingresa tus datos para continuar.</p>
 
-        @if (message()) { <div class="feedback success" role="status">{{ message() }}</div> }
+        @if (message()) { <div class="feedback success" role="status" aria-live="polite">{{ message() }}</div> }
         @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
 
         <form [formGroup]="loginForm" (ngSubmit)="signIn()" class="form-stack">
           <label for="login-email">Correo electrónico</label>
           <input id="login-email" type="email" autocomplete="email" formControlName="email"
-            placeholder="nombre@correo.com">
+            placeholder="nombre@correo.com" aria-describedby="login-email-error"
+            [attr.aria-invalid]="loginForm.controls.email.touched && loginForm.controls.email.invalid">
           @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
-            <small class="field-error">Escribe un correo electrónico válido.</small>
+            <small class="field-error" id="login-email-error">Escribe un correo electrónico válido.</small>
           }
           <label for="login-password">Contraseña</label>
           <input id="login-password" type="password" autocomplete="current-password"
-            formControlName="password" placeholder="Tu contraseña">
+            formControlName="password" placeholder="Tu contraseña" aria-describedby="login-password-error"
+            [attr.aria-invalid]="loginForm.controls.password.touched && loginForm.controls.password.invalid">
           @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
-            <small class="field-error">Escribe tu contraseña.</small>
+            <small class="field-error" id="login-password-error">Escribe tu contraseña.</small>
+          }
+          @if (selectedRole() === 'user') {
+            <button class="text-button recovery-link" type="button" (click)="openForgotPassword()">
+              ¿Olvidaste tu contraseña?
+            </button>
           }
           <button class="primary-button full-button" type="submit" [disabled]="busy()">
             {{ busy() ? 'Conectando…' : 'Iniciar sesión' }}
@@ -87,6 +94,30 @@
             <button class="text-button" type="button" (click)="openRegistration()">Regístrate</button>
           </p>
         }
+      } @else if (mode() === 'forgot-password') {
+        <button class="text-button back-button" type="button" (click)="backToLogin()">
+          <span aria-hidden="true">←</span> Volver al acceso
+        </button>
+        <p class="eyebrow">RECUPERAR CUENTA</p>
+        <h2>Restablecer contraseña.</h2>
+        <p class="muted">Escribe el correo asociado a tu cuenta y te enviaremos un enlace.</p>
+
+        @if (message()) { <div class="feedback success" role="status" aria-live="polite">{{ message() }}</div> }
+        @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
+
+        <form [formGroup]="forgotPasswordForm" (ngSubmit)="forgotPassword()" class="form-stack">
+          <label for="forgot-email">Correo electrónico</label>
+          <input id="forgot-email" type="email" autocomplete="email" formControlName="email"
+            placeholder="nombre@correo.com" aria-describedby="forgot-email-error"
+            [attr.aria-invalid]="forgotPasswordForm.controls.email.touched && forgotPasswordForm.controls.email.invalid">
+          @if (forgotPasswordForm.controls.email.touched && forgotPasswordForm.controls.email.invalid) {
+            <small class="field-error" id="forgot-email-error">Escribe un correo electrónico válido.</small>
+          }
+          <button class="primary-button full-button" type="submit" [disabled]="busy()">
+            {{ busy() ? 'Enviando…' : 'Enviar enlace' }}
+            @if (!busy()) { <span aria-hidden="true">→</span> }
+          </button>
+        </form>
       } @else if (mode() === 'register') {
         <button class="text-button back-button" type="button" (click)="chooseRole('user')">
           <span aria-hidden="true">←</span> Volver al acceso
@@ -97,28 +128,36 @@
         @if (error()) { <div class="feedback danger" role="alert">{{ error() }}</div> }
         <form [formGroup]="registerForm" (ngSubmit)="register()" class="form-stack registration-form">
           <label for="register-name">Nombre completo</label>
-          <input id="register-name" autocomplete="name" formControlName="fullName" placeholder="Tu nombre">
+          <input id="register-name" autocomplete="name" formControlName="fullName" placeholder="Tu nombre"
+            aria-describedby="register-name-error"
+            [attr.aria-invalid]="registerForm.controls.fullName.touched && registerForm.controls.fullName.invalid">
           @if (registerForm.controls.fullName.touched && registerForm.controls.fullName.invalid) {
-            <small class="field-error">Este campo es obligatorio.</small>
+            <small class="field-error" id="register-name-error">Este campo es obligatorio.</small>
           }
           <label for="register-username">Nombre de usuario</label>
-          <input id="register-username" autocomplete="username" formControlName="userName" placeholder="Cómo te llamamos">
+          <input id="register-username" autocomplete="username" formControlName="userName" placeholder="Cómo te llamamos"
+            aria-describedby="register-username-error"
+            [attr.aria-invalid]="registerForm.controls.userName.touched && registerForm.controls.userName.invalid">
           @if (registerForm.controls.userName.touched && registerForm.controls.userName.invalid) {
-            <small class="field-error">Este campo es obligatorio.</small>
+            <small class="field-error" id="register-username-error">Este campo es obligatorio.</small>
           }
           <label for="register-email">Correo electrónico</label>
-          <input id="register-email" type="email" autocomplete="email" formControlName="email" placeholder="nombre@correo.com">
+          <input id="register-email" type="email" autocomplete="email" formControlName="email" placeholder="nombre@correo.com"
+            aria-describedby="register-email-error"
+            [attr.aria-invalid]="registerForm.controls.email.touched && registerForm.controls.email.invalid">
           @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
-            <small class="field-error">Escribe un correo electrónico válido.</small>
+            <small class="field-error" id="register-email-error">Escribe un correo electrónico válido.</small>
           }
           <label for="register-phone">Teléfono</label>
           <input id="register-phone" type="tel" autocomplete="tel" formControlName="phoneNumber" placeholder="+34 600 000 000">
           <label for="register-address">Dirección</label>
           <input id="register-address" autocomplete="street-address" formControlName="address" placeholder="Tu dirección">
           <label for="register-password">Contraseña</label>
-          <input id="register-password" type="password" autocomplete="new-password" formControlName="password" placeholder="Mínimo 8 caracteres">
+          <input id="register-password" type="password" autocomplete="new-password" formControlName="password" placeholder="Mínimo 8 caracteres"
+            aria-describedby="register-password-error"
+            [attr.aria-invalid]="registerForm.controls.password.touched && registerForm.controls.password.invalid">
           @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
-            <small class="field-error">Usa al menos 8 caracteres.</small>
+            <small class="field-error" id="register-password-error">Usa al menos 8 caracteres.</small>
           }
           <label for="register-confirm">Confirma tu contraseña</label>
           <input id="register-confirm" type="password" autocomplete="new-password" formControlName="confirmPassword" placeholder="Repite la contraseña">
@@ -131,7 +170,7 @@
         <p class="eyebrow">VERIFICA TU CORREO</p>
         <h2>Un paso más y listo.</h2>
         @if (message()) {
-          <div class="feedback success" role="status">{{ message() }}</div>
+          <div class="feedback success" role="status" aria-live="polite">{{ message() }}</div>
         } @else {
           <p class="muted">
             Confirma tu dirección de correo desde el enlace que te enviamos. Después podrás iniciar sesión.

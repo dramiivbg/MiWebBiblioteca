@@ -1,21 +1,23 @@
-import { Component, inject, OnInit, output, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { BibliotecaAuthService } from './biblioteca-api.service';
 import { bibliotecaErrorMessage } from './biblioteca-error';
-import { SessionUser, UserRole } from './biblioteca.models';
+import { UserRole } from './biblioteca.models';
+import { AuthFacade } from '../core/auth.facade';
 
-type AuthMode = 'role' | 'login' | 'register' | 'verify';
+type AuthMode = 'role' | 'login' | 'register' | 'verify' | 'forgot-password';
 
 @Component({
   selector: 'app-biblioteca-auth',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './biblioteca-auth.component.html',
 })
 export class BibliotecaAuthComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder).nonNullable;
   private readonly auth = inject(BibliotecaAuthService);
+  private readonly facade = inject(AuthFacade);
 
-  readonly authenticated = output<SessionUser>();
   readonly mode = signal<AuthMode>('role');
   readonly selectedRole = signal<UserRole>('user');
   readonly busy = signal(false);
@@ -25,6 +27,10 @@ export class BibliotecaAuthComponent implements OnInit {
   readonly loginForm = this.formBuilder.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
+  });
+
+  readonly forgotPasswordForm = this.formBuilder.group({
+    email: ['', [Validators.required, Validators.email]],
   });
 
   readonly registerForm = this.formBuilder.group({
@@ -52,8 +58,19 @@ export class BibliotecaAuthComponent implements OnInit {
     this.clearFeedback();
   }
 
+  openForgotPassword(): void {
+    this.forgotPasswordForm.controls.email.setValue(this.loginForm.controls.email.value);
+    this.mode.set('forgot-password');
+    this.clearFeedback();
+  }
+
   backToRoles(): void {
     this.mode.set('role');
+    this.clearFeedback();
+  }
+
+  backToLogin(): void {
+    this.mode.set('login');
     this.clearFeedback();
   }
 
@@ -65,18 +82,8 @@ export class BibliotecaAuthComponent implements OnInit {
     this.busy.set(true);
     const { email, password } = this.loginForm.getRawValue();
     try {
-      const tokens = await this.auth.login(email, password);
-      const user = this.auth.userFromToken(tokens, email, this.selectedRole());
-      if (user.role !== this.selectedRole()) {
-        this.auth.clearSession();
-        throw new Error(
-          `Esta cuenta no tiene el rol ${this.selectedRole() === 'admin' ? 'administrador' : 'usuario'}.`,
-        );
-      }
-      this.auth.saveUser(user);
-      this.authenticated.emit(user);
+      await this.facade.signIn(email, password, this.selectedRole());
     } catch (error: unknown) {
-      this.auth.clearSession();
       this.error.set(bibliotecaErrorMessage(error, 'No se pudo iniciar sesión.'));
     } finally {
       this.busy.set(false);
@@ -117,6 +124,25 @@ export class BibliotecaAuthComponent implements OnInit {
         },
         complete: () => this.busy.set(false),
       });
+  }
+
+  forgotPassword(): void {
+    this.clearFeedback();
+    this.forgotPasswordForm.markAllAsTouched();
+    if (this.forgotPasswordForm.invalid) return;
+
+    this.busy.set(true);
+    const { email } = this.forgotPasswordForm.getRawValue();
+    this.auth.forgotPassword(email).subscribe({
+      next: (response) => this.message.set(response.message),
+      error: (error: unknown) => {
+        this.busy.set(false);
+        this.error.set(
+          bibliotecaErrorMessage(error, 'No se pudo solicitar el restablecimiento.'),
+        );
+      },
+      complete: () => this.busy.set(false),
+    });
   }
 
   private checkEmailConfirmation(): void {

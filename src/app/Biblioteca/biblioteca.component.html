@@ -1,159 +1,96 @@
-<div class="app-frame">
-  <div class="dashboard">
-    <aside class="sidebar">
-      <a class="brand sidebar-brand" href="/" aria-label="Biblioteca, inicio">
-        <span class="brand-mark" aria-hidden="true">B</span><span>Biblioteca</span>
-      </a>
-      <div class="sidebar-label">MENÚ</div>
-      <nav class="side-nav" aria-label="Navegación principal">
-        <button type="button" [class.active]="section() === 'catalog'" (click)="setSection('catalog')">
-          <span aria-hidden="true">▤</span> Explorar libros
-        </button>
-        <button type="button" [class.active]="section() === 'reservations'" (click)="setSection('reservations')">
-          <span aria-hidden="true">◷</span> Mis reservas
-        </button>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="sidebar-help">
-          <span class="help-icon" aria-hidden="true">✦</span>
-          <strong>¿Un libro te cambió?</strong>
-          <span>Compártelo con la comunidad.</span>
-        </div>
-        <button class="logout-button" type="button" [disabled]="signingOut()" (click)="signOut.emit()">
-          <span aria-hidden="true">↪</span> Cerrar sesión
-        </button>
+<app-dashboard-shell
+  [name]="auth.user()?.name ?? ''"
+  roleLabel="USUARIO"
+  [title]="section() === 'catalog' ? 'Catálogo' : 'Reservas'"
+  [sections]="sections"
+  [active]="section()"
+  [signingOut]="auth.signingOut()"
+  [message]="library.message()"
+  [error]="library.error()"
+  (navigate)="setSection($event)"
+  (signOut)="auth.signOut()"
+>
+  <section class="dashboard-intro">
+    <div>
+      <p class="eyebrow">{{ section() === 'catalog' ? 'TU ESPACIO DE LECTURA' : 'TUS LECTURAS' }}</p>
+      <h1>
+        {{ section() === 'catalog' ? 'Encuentra tu próxima historia.' : 'Tus lecturas, a mano.' }}
+      </h1>
+      <p class="muted">
+        {{ section() === 'catalog'
+          ? 'Historias nuevas, autores inolvidables y un lugar para cada lector.'
+          : 'Revisa el estado y la fecha de devolución de tus libros.' }}
+      </p>
+    </div>
+    @if (section() === 'catalog') {
+      <div class="mini-stat">
+        <span class="mini-stat-icon" aria-hidden="true">▤</span>
+        <span><strong>{{ library.books().length }}</strong><small>títulos disponibles</small></span>
       </div>
-    </aside>
+    }
+  </section>
 
-    <main class="workspace">
-      <header class="topbar">
-        <div class="breadcrumb"><span>Biblioteca</span><span aria-hidden="true">/</span><strong>
-          {{ section() === 'catalog' ? 'Catálogo' : 'Reservas' }}
-        </strong></div>
-        <div class="profile">
-          <span class="profile-role">USUARIO</span>
-          <span class="avatar" aria-hidden="true">{{ user().name.slice(0, 1).toUpperCase() }}</span>
-          <span class="profile-name">{{ user().name }}</span>
-        </div>
-      </header>
+  <app-stats-grid
+    [bookCount]="library.books().length"
+    [activeLoans]="library.activeReservations()"
+    [totalCopies]="library.totalCopies()"
+  />
 
-      <div class="page-content">
-        @if (message()) { <div class="feedback success page-feedback" role="status">{{ message() }}</div> }
-        @if (error()) { <div class="feedback danger page-feedback" role="alert">{{ error() }}</div> }
-
-        <section class="dashboard-intro">
-          <div>
-            <p class="eyebrow">{{ section() === 'catalog' ? 'TU ESPACIO DE LECTURA' : 'TUS LECTURAS' }}</p>
-            <h1>{{ section() === 'catalog' ? 'Encuentra tu próxima historia.' : 'Tus lecturas, a mano.' }}</h1>
-            <p class="muted">
-              {{ section() === 'catalog'
-                ? 'Historias nuevas, autores inolvidables y un lugar para cada lector.'
-                : 'Revisa el estado y la fecha de devolución de tus libros.' }}
-            </p>
-          </div>
-          @if (section() === 'catalog') {
-            <div class="mini-stat">
-              <span class="mini-stat-icon" aria-hidden="true">▤</span>
-              <span><strong>{{ books().length }}</strong><small>títulos disponibles</small></span>
-            </div>
+  @if (library.loading()) {
+    <div class="loading-state" role="status"><span class="spinner"></span> Cargando biblioteca…</div>
+  } @else if (section() === 'catalog') {
+    <section class="content-panel">
+      <div class="section-heading">
+        <div><h2>El catálogo</h2><p class="muted">Una historia nueva está a solo una reserva.</p></div>
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            aria-label="Buscar por título o autor"
+            placeholder="Buscar libros o autores…"
+            [value]="library.search()"
+            (input)="setSearch($event)"
+          >
+        </label>
+      </div>
+      @if (library.visibleBooks().length) {
+        <div class="book-grid">
+          @for (book of library.visibleBooks(); track book.id; let i = $index) {
+            <app-book-card
+              [book]="book"
+              [variant]="i"
+              [busy]="library.busy()"
+              (reserve)="reserve($event)"
+            />
           }
-        </section>
-
-        <section class="stats-grid" aria-label="Resumen de la biblioteca">
-          <article class="stat-card">
-            <span class="stat-icon lavender" aria-hidden="true">▤</span>
-            <span class="stat-copy"><small>LIBROS PARA EXPLORAR</small><strong>{{ books().length }}</strong></span>
-            <span class="stat-caption">en la biblioteca</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon peach" aria-hidden="true">◷</span>
-            <span class="stat-copy"><small>TUS PRÉSTAMOS ACTIVOS</small><strong>{{ activeReservations() }}</strong></span>
-            <span class="stat-caption">pendientes de devolución</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon mint" aria-hidden="true">▥</span>
-            <span class="stat-copy"><small>EJEMPLARES DISPONIBLES</small><strong>{{ totalCopies() }}</strong></span>
-            <span class="stat-caption">listos para reservar</span>
-          </article>
-        </section>
-
-        @if (loading()) {
-          <div class="loading-state" role="status"><span class="spinner"></span> Cargando biblioteca…</div>
-        } @else if (section() === 'catalog') {
-          <section class="content-panel">
-            <div class="section-heading">
-              <div><h2>El catálogo</h2><p class="muted">Una historia nueva está a solo una reserva.</p></div>
-              <label class="search-box">
-                <span aria-hidden="true">⌕</span>
-                <input type="search" aria-label="Buscar por título o autor" placeholder="Buscar libros o autores…"
-                  [value]="search()" (input)="setSearch($event)">
-              </label>
-            </div>
-            @if (visibleBooks().length) {
-              <div class="book-grid">
-                @for (book of visibleBooks(); track book.id; let i = $index) {
-                  <article class="book-card">
-                    <div class="book-cover" [class.cover-lilac]="i % 4 === 0" [class.cover-sage]="i % 4 === 1"
-                      [class.cover-rose]="i % 4 === 2" [class.cover-gold]="i % 4 === 3">
-                      <span class="cover-kicker">BIBLIOTECA · {{ book.publishedDate | date:'yyyy' }}</span>
-                      <span class="cover-title">{{ book.title }}</span>
-                      <span class="cover-author">{{ book.author }}</span>
-                      <span class="cover-ornament" aria-hidden="true">✳</span>
-                    </div>
-                    <div class="book-info">
-                      <div class="book-meta">
-                        <span>{{ book.pages }} páginas</span>
-                        <span [class.stock-empty]="book.stock < 1">{{ book.stock > 0 ? 'Disponible' : 'Agotado' }}</span>
-                      </div>
-                      <h3>{{ book.title }}</h3>
-                      <p>{{ book.author }}</p>
-                      <p class="book-description">{{ book.description }}</p>
-                      <button class="outline-button" type="button" [disabled]="book.stock < 1 || busy()" (click)="reserve(book)">
-                        {{ book.stock > 0 ? 'Reservar libro' : 'Sin ejemplares' }} <span aria-hidden="true">→</span>
-                      </button>
-                    </div>
-                  </article>
-                }
-              </div>
-            } @else {
-              <div class="empty-state"><span aria-hidden="true">⌕</span><h3>No encontramos ese libro.</h3><p>Prueba con otro título o autor.</p></div>
-            }
-          </section>
-        } @else {
-          <section class="content-panel">
-            <div class="section-heading">
-              <div><h2>Mis reservas</h2><p class="muted">El estado de cada libro, de un vistazo.</p></div>
-            </div>
-            @if (reservations().length) {
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>LIBRO</th><th>RESERVADO EL</th><th>DEVOLUCIÓN</th><th>ESTADO</th></tr></thead>
-                  <tbody>
-                    @for (reservation of reservations(); track reservation.id) {
-                      <tr>
-                        <td><strong>{{ bookFor(reservation)?.title || 'Libro #' + reservation.bookId }}</strong>
-                          <small class="table-subtext">{{ bookFor(reservation)?.author || 'Catálogo' }}</small>
-                        </td>
-                        <td>{{ reservation.reservationDate | date:'d MMM y' }}</td>
-                        <td>{{ reservation.dueDate | date:'d MMM y' }}</td>
-                        <td><span class="status-pill" [class.returned]="reservation.isReturned">
-                          {{ reservation.isReturned ? 'Devuelto' : 'En préstamo' }}
-                        </span></td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="empty-state">
-                <span aria-hidden="true">◷</span><h3>Aún no hay reservas.</h3>
-                <p>Cuando reserves un libro, podrás seguirlo desde aquí.</p>
-                <button class="text-button" type="button" (click)="setSection('catalog')">Explorar el catálogo →</button>
-              </div>
-            }
-          </section>
-        }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <span aria-hidden="true">⌕</span><h3>No encontramos ese libro.</h3>
+          <p>Prueba con otro título o autor.</p>
+        </div>
+      }
+    </section>
+  } @else {
+    <section class="content-panel">
+      <div class="section-heading">
+        <div><h2>Mis reservas</h2><p class="muted">El estado de cada libro, de un vistazo.</p></div>
       </div>
-    </main>
-  </div>
-</div>
+      @if (library.reservations().length) {
+        <app-reservation-table
+          [reservations]="library.reservations()"
+          [booksById]="library.booksById()"
+          [usersById]="library.usersById()"
+        />
+      } @else {
+        <div class="empty-state">
+          <span aria-hidden="true">◷</span><h3>Aún no hay reservas.</h3>
+          <p>Cuando reserves un libro, podrás seguirlo desde aquí.</p>
+          <button class="text-button" type="button" (click)="setSection('catalog')">
+            Explorar el catálogo →
+          </button>
+        </div>
+      }
+    </section>
+  }
+</app-dashboard-shell>

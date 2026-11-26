@@ -9,7 +9,7 @@ export function bibliotecaErrorMessage(error: unknown, fallback: string): string
     }
     if (typeof body === 'string' && body.trim()) return body;
     if (error.status === 0) {
-      return 'No hay conexión con la API. Comprueba que http://localhost:5000 está disponible y permite CORS.';
+      return 'No hay conexión con la API. Comprueba que el servicio esté disponible y permita CORS.';
     }
     return `${fallback} (HTTP ${error.status})`;
   }

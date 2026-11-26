@@ -1,0 +1,15 @@
+.session-error {
+  position: fixed;
+  z-index: 10;
+  top: 12px;
+  left: 50%;
+  max-width: min(560px, calc(100% - 24px));
+  padding: 11px 13px;
+  border: 1px solid #e8c9c4;
+  border-radius: 8px;
+  background: #fff5f3;
+  color: #893c37;
+  font-size: 12px;
+  line-height: 1.5;
+  transform: translateX(-50%);
+}
