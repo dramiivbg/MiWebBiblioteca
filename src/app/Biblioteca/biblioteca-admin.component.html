@@ -1,7 +1,15 @@
 <app-dashboard-shell
   [name]="auth.user()?.name ?? ''"
   roleLabel="ADMINISTRADOR"
-  [title]="section() === 'reservations' ? 'Reservas' : section() === 'books' ? 'Gestión de libros' : 'Usuarios'"
+  [title]="
+    section() === 'reservations'
+      ? 'Reservas'
+      : section() === 'books'
+        ? 'Gestión de libros'
+        : section() === 'users'
+          ? 'Usuarios'
+          : 'Estadísticas'
+  "
   [sections]="sections"
   [active]="section()"
   [signingOut]="auth.signingOut()"
@@ -18,8 +26,10 @@
           Gestión de reservas
         } @else if (section() === 'books') {
           Cuida de tu catálogo.
-        } @else {
+        } @else if (section() === 'users') {
           Una comunidad lectora.
+        } @else {
+          Los títulos favoritos de tus lectores.
         }
       </h1>
       <p class="muted">
@@ -27,8 +37,10 @@
           Consulta préstamos y confirma las devoluciones recibidas.
         } @else if (section() === 'books') {
           Administra los títulos y ejemplares disponibles.
-        } @else {
+        } @else if (section() === 'users') {
           Administra las cuentas registradas en la biblioteca.
+        } @else {
+          Consulta los cinco libros más reservados y sus lectores.
         }
       </p>
     </div>
@@ -41,11 +53,16 @@
   />
 
   @if (library.loading()) {
-    <div class="loading-state" role="status"><span class="spinner"></span> Cargando biblioteca…</div>
+    <div class="loading-state" role="status">
+      <span class="spinner"></span> Cargando biblioteca…
+    </div>
   } @else if (section() === 'reservations') {
     <section class="content-panel">
       <div class="section-heading">
-        <div><h2>Todos los préstamos</h2><p class="muted">El estado de cada libro, de un vistazo.</p></div>
+        <div>
+          <h2>Todos los préstamos</h2>
+          <p class="muted">El estado de cada libro, de un vistazo.</p>
+        </div>
       </div>
       <app-reservation-table
         [reservations]="library.reservations()"
@@ -60,8 +77,13 @@
   } @else if (section() === 'books') {
     <section class="content-panel">
       <div class="section-heading">
-        <div><h2>Todos los libros</h2><p class="muted">Gestiona los títulos de tu catálogo.</p></div>
-        <button class="primary-button" type="button" (click)="openNewBook()">＋ Añadir libro</button>
+        <div>
+          <h2>Todos los libros</h2>
+          <p class="muted">Gestiona los títulos de tu catálogo.</p>
+        </div>
+        <button class="primary-button" type="button" (click)="openNewBook()">
+          ＋ Añadir libro
+        </button>
       </div>
       <div class="table-wrap">
         <table>
@@ -75,7 +97,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (book of library.books(); track book.id) {
+            @for (book of pagedBooks(); track book.id) {
               <tr>
                 <td>
                   <strong>{{ book.title }}</strong>
@@ -85,23 +107,44 @@
                 <td>{{ book.stock }}</td>
                 <td>{{ book.pages }}</td>
                 <td class="action-cell">
-                  <button class="table-action" type="button" (click)="editBook(book)">Editar</button>
-                  <button class="table-action danger-action" type="button" (click)="deleteBook(book)">
+                  <button class="table-action" type="button" (click)="editBook(book)">
+                    Editar
+                  </button>
+                  <button
+                    class="table-action danger-action"
+                    type="button"
+                    (click)="deleteBook(book)"
+                  >
                     Eliminar
                   </button>
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="5" class="table-empty">Aún no hay libros en el catálogo.</td></tr>
+              <tr>
+                <td colspan="5" class="table-empty">Aún no hay libros en el catálogo.</td>
+              </tr>
             }
           </tbody>
         </table>
       </div>
+      @if (bookPageCount() > 1) {
+        <app-pagination-controls
+          [page]="currentBookPage()"
+          [pageCount]="bookPageCount()"
+          previousLabel="Ver libros anteriores"
+          nextLabel="Ver más libros"
+          (previous)="previousBookPage()"
+          (next)="nextBookPage()"
+        />
+      }
     </section>
-  } @else {
+  } @else if (section() === 'users') {
     <section class="content-panel">
       <div class="section-heading">
-        <div><h2>Usuarios</h2><p class="muted">Administra el acceso a la biblioteca.</p></div>
+        <div>
+          <h2>Usuarios</h2>
+          <p class="muted">Administra el acceso a la biblioteca.</p>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
@@ -115,7 +158,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (libraryUser of library.users(); track libraryUser.id || libraryUser.email) {
+            @for (libraryUser of pagedUsers(); track libraryUser.id || libraryUser.email) {
               <tr>
                 <td>
                   <strong>{{ libraryUser.fullName }}</strong>
@@ -149,11 +192,39 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="5" class="table-empty">No hay usuarios registrados.</td></tr>
+              <tr>
+                <td colspan="5" class="table-empty">No hay usuarios registrados.</td>
+              </tr>
             }
           </tbody>
         </table>
       </div>
+      @if (userPageCount() > 1) {
+        <app-pagination-controls
+          [page]="currentUserPage()"
+          [pageCount]="userPageCount()"
+          previousLabel="Ver usuarios anteriores"
+          nextLabel="Ver más usuarios"
+          (previous)="previousUserPage()"
+          (next)="nextUserPage()"
+        />
+      }
+    </section>
+  } @else {
+    <section class="content-panel">
+      <div class="section-heading">
+        <div>
+          <h2>Libros más reservados</h2>
+          <p class="muted">
+            Pasa el cursor por un color o por un libro para ver sus reservas y lectores.
+          </p>
+        </div>
+      </div>
+      <app-top-books-chart
+        [books]="library.topBooks()"
+        [loading]="library.topBooksLoading()"
+        [error]="library.topBooksError()"
+      />
     </section>
   }
 </app-dashboard-shell>
@@ -170,28 +241,30 @@
       (click)="$event.stopPropagation()"
       (keydown)="onDialogKeydown($event)"
     >
-      <button class="modal-close" type="button" aria-label="Cerrar" (click)="closeBookForm()">×</button>
+      <button class="modal-close" type="button" aria-label="Cerrar" (click)="closeBookForm()">
+        ×
+      </button>
       <p class="eyebrow">CATÁLOGO</p>
       <h2 id="book-modal-title">{{ editingBook() ? 'Editar libro' : 'Añadir un libro' }}</h2>
       <form [formGroup]="bookForm" (ngSubmit)="saveBook()" class="form-stack modal-form">
         <label for="book-title">Título</label>
-        <input id="book-title" formControlName="title">
+        <input id="book-title" formControlName="title" />
         <label for="book-author">Autor</label>
-        <input id="book-author" formControlName="author">
+        <input id="book-author" formControlName="author" />
         <label for="book-description">Descripción</label>
         <textarea id="book-description" rows="3" formControlName="description"></textarea>
         <div class="form-row">
           <span>
             <label for="book-date">Fecha de publicación</label>
-            <input id="book-date" type="date" formControlName="publishedDate">
+            <input id="book-date" type="date" formControlName="publishedDate" />
           </span>
           <span>
             <label for="book-stock">Ejemplares</label>
-            <input id="book-stock" type="number" min="0" formControlName="stock">
+            <input id="book-stock" type="number" min="0" formControlName="stock" />
           </span>
           <span>
             <label for="book-pages">Páginas</label>
-            <input id="book-pages" type="number" min="1" formControlName="pages">
+            <input id="book-pages" type="number" min="1" formControlName="pages" />
           </span>
         </div>
         <button class="primary-button full-button" type="submit" [disabled]="library.busy()">

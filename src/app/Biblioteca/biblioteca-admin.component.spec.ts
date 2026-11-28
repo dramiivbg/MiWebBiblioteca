@@ -4,8 +4,9 @@ import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { provideRouter } from '@angular/router';
 import { BibliotecaAdminComponent } from './biblioteca-admin.component';
-import { LibraryUser } from './biblioteca.models';
+import { Book, LibraryUser } from './biblioteca.models';
 import { BookRepository } from '../core/book.repository';
+import { DashboardRepository } from '../core/dashboard.repository';
 import { ReservationRepository } from '../core/reservation.repository';
 import { LibraryFacade } from '../core/library.facade';
 import { UserRepository } from '../core/user.repository';
@@ -143,5 +144,64 @@ describe('BibliotecaAdminComponent', () => {
 
     expect(getById).toHaveBeenCalledWith('missing-user');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('reader-three');
+  });
+
+  it('paginates the catalog and users lists in groups of ten', async () => {
+    const books: Book[] = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      title: `Libro ${index + 1}`,
+      author: 'Autor',
+      description: '',
+      publishedDate: '2026-01-01T00:00:00Z',
+      stock: 1,
+      pages: 100,
+    }));
+    const manyUsers: LibraryUser[] = Array.from({ length: 12 }, (_, index) => ({
+      ...users[1],
+      id: `user-${index}`,
+      fullName: `Lector ${index + 1}`,
+    }));
+
+    await TestBed.configureTestingModule({
+      imports: [BibliotecaAdminComponent],
+      providers: [
+        provideHttpClient(),
+        provideRouter([]),
+        { provide: BookRepository, useValue: { list: vi.fn(() => of(books)) } },
+        { provide: ReservationRepository, useValue: { list: vi.fn(() => of([])) } },
+        {
+          provide: UserRepository,
+          useValue: {
+            list: vi.fn(() => of(manyUsers)),
+            getById: vi.fn(() => of(null)),
+            setEnabled: vi.fn(),
+          },
+        },
+        { provide: DashboardRepository, useValue: { booksReservations: vi.fn(() => of([])) } },
+      ],
+    }).compileComponents();
+
+    await TestBed.inject(LibraryFacade).load('admin');
+    const fixture = TestBed.createComponent(BibliotecaAdminComponent);
+    const element = fixture.nativeElement as HTMLElement;
+    const rows = () => Array.from(element.querySelectorAll('tbody tr'));
+
+    fixture.componentInstance.setSection('books');
+    fixture.detectChanges();
+    expect(rows()).toHaveLength(10);
+    expect(element.querySelector('.chart-page-label')?.textContent).toContain('Página 1 de 2');
+    element.querySelector<HTMLButtonElement>('[aria-label="Ver más libros"]')?.click();
+    fixture.detectChanges();
+    expect(rows()).toHaveLength(2);
+    expect(rows()[0].textContent).toContain('Libro 11');
+
+    fixture.componentInstance.setSection('users');
+    fixture.detectChanges();
+    expect(rows()).toHaveLength(10);
+    expect(element.querySelector('.chart-page-label')?.textContent).toContain('Página 1 de 2');
+    element.querySelector<HTMLButtonElement>('[aria-label="Ver más usuarios"]')?.click();
+    fixture.detectChanges();
+    expect(rows()).toHaveLength(2);
+    expect(rows()[0].textContent).toContain('Lector 11');
   });
 });

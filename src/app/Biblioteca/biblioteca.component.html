@@ -12,20 +12,27 @@
 >
   <section class="dashboard-intro">
     <div>
-      <p class="eyebrow">{{ section() === 'catalog' ? 'TU ESPACIO DE LECTURA' : 'TUS LECTURAS' }}</p>
+      <p class="eyebrow">
+        {{ section() === 'catalog' ? 'TU ESPACIO DE LECTURA' : 'TUS LECTURAS' }}
+      </p>
       <h1>
         {{ section() === 'catalog' ? 'Encuentra tu próxima historia.' : 'Tus lecturas, a mano.' }}
       </h1>
       <p class="muted">
-        {{ section() === 'catalog'
-          ? 'Historias nuevas, autores inolvidables y un lugar para cada lector.'
-          : 'Revisa el estado y la fecha de devolución de tus libros.' }}
+        {{
+          section() === 'catalog'
+            ? 'Historias nuevas, autores inolvidables y un lugar para cada lector.'
+            : 'Revisa el estado y la fecha de devolución de tus libros.'
+        }}
       </p>
     </div>
     @if (section() === 'catalog') {
       <div class="mini-stat">
         <span class="mini-stat-icon" aria-hidden="true">▤</span>
-        <span><strong>{{ library.books().length }}</strong><small>títulos disponibles</small></span>
+        <span
+          ><strong>{{ library.books().length }}</strong
+          ><small>títulos disponibles</small></span
+        >
       </div>
     }
   </section>
@@ -37,11 +44,16 @@
   />
 
   @if (library.loading()) {
-    <div class="loading-state" role="status"><span class="spinner"></span> Cargando biblioteca…</div>
+    <div class="loading-state" role="status">
+      <span class="spinner"></span> Cargando biblioteca…
+    </div>
   } @else if (section() === 'catalog') {
     <section class="content-panel">
       <div class="section-heading">
-        <div><h2>El catálogo</h2><p class="muted">Una historia nueva está a solo una reserva.</p></div>
+        <div>
+          <h2>El catálogo</h2>
+          <p class="muted">Una historia nueva está a solo una reserva.</p>
+        </div>
         <label class="search-box">
           <span aria-hidden="true">⌕</span>
           <input
@@ -50,7 +62,7 @@
             placeholder="Buscar libros o autores…"
             [value]="library.search()"
             (input)="setSearch($event)"
-          >
+          />
         </label>
       </div>
       @if (library.visibleBooks().length) {
@@ -66,7 +78,8 @@
         </div>
       } @else {
         <div class="empty-state">
-          <span aria-hidden="true">⌕</span><h3>No encontramos ese libro.</h3>
+          <span aria-hidden="true">⌕</span>
+          <h3>No encontramos ese libro.</h3>
           <p>Prueba con otro título o autor.</p>
         </div>
       }
@@ -74,7 +87,10 @@
   } @else {
     <section class="content-panel">
       <div class="section-heading">
-        <div><h2>Mis reservas</h2><p class="muted">El estado de cada libro, de un vistazo.</p></div>
+        <div>
+          <h2>Mis reservas</h2>
+          <p class="muted">El estado de cada libro, de un vistazo.</p>
+        </div>
       </div>
       @if (library.reservations().length) {
         <app-reservation-table
@@ -84,7 +100,8 @@
         />
       } @else {
         <div class="empty-state">
-          <span aria-hidden="true">◷</span><h3>Aún no hay reservas.</h3>
+          <span aria-hidden="true">◷</span>
+          <h3>Aún no hay reservas.</h3>
           <p>Cuando reserves un libro, podrás seguirlo desde aquí.</p>
           <button class="text-button" type="button" (click)="setSection('catalog')">
             Explorar el catálogo →
@@ -94,3 +111,52 @@
     </section>
   }
 </app-dashboard-shell>
+
+@if (reservingBook(); as book) {
+  <div class="modal-backdrop" (click)="closeReserveDialog()">
+    <section
+      #reserveDialog
+      class="book-modal reserve-dialog"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reserve-dialog-title"
+      aria-describedby="reserve-dialog-help"
+      (click)="$event.stopPropagation()"
+      (keydown)="onReserveDialogKeydown($event)"
+    >
+      <button class="modal-close" type="button" aria-label="Cerrar" (click)="closeReserveDialog()">
+        ×
+      </button>
+      <p class="eyebrow">RESERVA</p>
+      <h2 id="reserve-dialog-title">¿Cuándo devolverás «{{ book.title }}»?</h2>
+      <p id="reserve-dialog-help" class="muted">
+        Elige una fecha posterior a hoy. Podrás verla en «Mis reservas».
+      </p>
+      <form class="form-stack modal-form" (submit)="$event.preventDefault(); confirmReserve()">
+        <label for="return-date">Fecha de devolución</label>
+        <input
+          id="return-date"
+          type="date"
+          required
+          [min]="minimumReturnDate()"
+          [value]="returnDate()"
+          [attr.aria-invalid]="returnDateError() ? 'true' : null"
+          [attr.aria-describedby]="returnDateError() ? 'return-date-error' : 'reserve-dialog-help'"
+          (input)="updateReturnDate($event)"
+        />
+        @if (returnDateError()) {
+          <small id="return-date-error" class="field-error" role="alert">{{
+            returnDateError()
+          }}</small>
+        }
+        <div class="reserve-dialog-actions">
+          <button class="text-button" type="button" (click)="closeReserveDialog()">Cancelar</button>
+          <button class="primary-button" type="submit" [disabled]="library.busy()">
+            Confirmar reserva
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

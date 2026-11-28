@@ -31,6 +31,25 @@ export interface Reservation {
   isReturned: boolean;
 }
 
+export interface ReservationDetail {
+  id: number;
+  userId: string;
+  userName: string;
+  fullName: string;
+  email: string;
+  reservationDate: string;
+  dueDate: string;
+  isReturned: boolean;
+}
+
+export interface TopBook {
+  bookId: number;
+  title: string;
+  author: string;
+  totalReservations: number;
+  reservations: ReservationDetail[];
+}
+
 export interface LibraryUser {
   id?: string | null;
   address: string;

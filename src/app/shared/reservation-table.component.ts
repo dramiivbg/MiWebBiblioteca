@@ -1,27 +1,36 @@
 import { DatePipe } from '@angular/common';
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { Book, LibraryUser, Reservation } from '../Biblioteca/biblioteca.models';
+import { PaginationControlsComponent } from './pagination-controls.component';
+
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-reservation-table',
-  imports: [DatePipe],
+  imports: [DatePipe, PaginationControlsComponent],
   template: `
     @if (reservations().length) {
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              @if (showUser()) { <th scope="col">LECTOR</th> }
+              @if (showUser()) {
+                <th scope="col">LECTOR</th>
+              }
               <th scope="col">LIBRO</th>
               <th scope="col">RESERVADO EL</th>
               <th scope="col">DEVOLUCIÓN</th>
               <th scope="col">ESTADO</th>
-              @if (showActions()) { <th scope="col">ACCIÓN</th> }
+              @if (showActions()) {
+                <th scope="col">ACCIÓN</th>
+              }
             </tr>
           </thead>
           <tbody>
-            @for (reservation of reservations(); track reservation.id) {
-              @let reader = usersById().get(reservation.userId) || usersById().get(reservation.userId.toLowerCase());
+            @for (reservation of visibleReservations(); track reservation.id) {
+              @let reader =
+                usersById().get(reservation.userId) ||
+                usersById().get(reservation.userId.toLowerCase());
               <tr>
                 @if (showUser()) {
                   <td>
@@ -32,7 +41,9 @@ import { Book, LibraryUser, Reservation } from '../Biblioteca/biblioteca.models'
                   </td>
                 }
                 <td>
-                  <strong>{{ booksById().get(reservation.bookId)?.title || 'Libro #' + reservation.bookId }}</strong>
+                  <strong>{{
+                    booksById().get(reservation.bookId)?.title || 'Libro #' + reservation.bookId
+                  }}</strong>
                   <small class="table-subtext">
                     {{ booksById().get(reservation.bookId)?.author || 'Catálogo' }}
                   </small>
@@ -65,6 +76,16 @@ import { Book, LibraryUser, Reservation } from '../Biblioteca/biblioteca.models'
           </tbody>
         </table>
       </div>
+      @if (pageCount() > 1) {
+        <app-pagination-controls
+          [page]="currentPage() + 1"
+          [pageCount]="pageCount()"
+          previousLabel="Ver reservas anteriores"
+          nextLabel="Ver más reservas"
+          (previous)="previousPage()"
+          (next)="nextPage()"
+        />
+      }
     } @else {
       <div class="empty-state">
         <span aria-hidden="true">◷</span>
@@ -82,4 +103,22 @@ export class ReservationTableComponent {
   readonly showActions = input(false);
   readonly busy = input(false);
   readonly returnBook = output<Reservation>();
+
+  private readonly pageIndex = signal(0);
+  readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.reservations().length / PAGE_SIZE)),
+  );
+  readonly currentPage = computed(() => Math.min(this.pageIndex(), this.pageCount() - 1));
+  readonly visibleReservations = computed(() => {
+    const start = this.currentPage() * PAGE_SIZE;
+    return this.reservations().slice(start, start + PAGE_SIZE);
+  });
+
+  nextPage(): void {
+    this.pageIndex.update((page) => Math.min(page + 1, this.pageCount() - 1));
+  }
+
+  previousPage(): void {
+    this.pageIndex.update((page) => Math.max(page - 1, 0));
+  }
 }

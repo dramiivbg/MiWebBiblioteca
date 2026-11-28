@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, Subject } from 'rxjs';
 import { Book } from './biblioteca.models';
@@ -25,7 +25,13 @@ export class BibliotecaComponent implements OnInit {
   readonly auth = inject(AuthFacade);
   readonly library = inject(LibraryFacade);
 
+  private readonly dialog = viewChild<ElementRef<HTMLElement>>('reserveDialog');
+  private previousFocus: HTMLElement | null = null;
+
   readonly section = signal<UserSection>('catalog');
+  readonly reservingBook = signal<Book | null>(null);
+  readonly returnDate = signal('');
+  readonly returnDateError = signal('');
   readonly sections: readonly DashboardNavItem[] = [
     { id: 'catalog', label: 'Explorar libros', icon: '▤' },
     { id: 'reservations', label: 'Mis reservas', icon: '◷' },
@@ -57,6 +63,92 @@ export class BibliotecaComponent implements OnInit {
   }
 
   reserve(book: Book): void {
-    void this.library.reserve(book);
+    this.previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.reservingBook.set(book);
+    this.returnDate.set(this.suggestedReturnDate());
+    this.returnDateError.set('');
+    this.library.clearFeedback();
+    queueMicrotask(() =>
+      this.dialog()?.nativeElement.querySelector<HTMLInputElement>('#return-date')?.focus(),
+    );
+  }
+
+  minimumReturnDate(): string {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return this.toDateInput(tomorrow);
+  }
+
+  updateReturnDate(event: Event): void {
+    if (event.target instanceof HTMLInputElement) {
+      this.returnDate.set(event.target.value);
+      this.returnDateError.set('');
+    }
+  }
+
+  confirmReserve(): void {
+    const book = this.reservingBook();
+    const date = this.returnDate();
+    if (!book) return;
+
+    if (!date) {
+      this.returnDateError.set('Elige una fecha de devolución.');
+      return;
+    }
+    if (date <= this.toDateInput(new Date())) {
+      this.returnDateError.set('La fecha de devolución debe ser posterior a hoy.');
+      return;
+    }
+
+    void this.library.reserve(book, new Date(`${date}T00:00:00Z`).toISOString());
+    this.closeReserveDialog();
+  }
+
+  closeReserveDialog(): void {
+    this.reservingBook.set(null);
+    this.previousFocus?.focus();
+    this.previousFocus = null;
+  }
+
+  onReserveDialogKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.closeReserveDialog();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const dialogElement = this.dialog()?.nativeElement;
+    if (!dialogElement) return;
+    const focusable = Array.from(
+      dialogElement.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [href]',
+      ),
+    );
+    if (!focusable.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (
+      event.shiftKey &&
+      (document.activeElement === first || document.activeElement === dialogElement)
+    ) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  private suggestedReturnDate(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 14);
+    return this.toDateInput(date);
+  }
+
+  private toDateInput(date: Date): string {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 10);
   }
 }
